@@ -7,7 +7,7 @@ permissions:
   actions: write
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v7
       - name: Configure universal Release build
