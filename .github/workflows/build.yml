@@ -1,0 +1,34 @@
+name: WLH VOCALS macOS build
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure universal Release build
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
+      - name: Build VST3 and AU
+        run: cmake --build build --config Release --target WLHVocals_VST3 WLHVocals_AU --parallel 3
+      - name: Ad-hoc codesign bundles
+        shell: bash
+        run: |
+          set -euo pipefail
+          codesign --force --deep -s - "build/WLHVocals_artefacts/Release/VST3/WLH VOCALS.vst3"
+          codesign --force --deep -s - "build/WLHVocals_artefacts/Release/AU/WLH VOCALS.component"
+      - name: Package plug-ins
+        run: |
+          mkdir -p package
+          ditto "build/WLHVocals_artefacts/Release/VST3/WLH VOCALS.vst3" "package/WLH VOCALS.vst3"
+          ditto "build/WLHVocals_artefacts/Release/AU/WLH VOCALS.component" "package/WLH VOCALS.component"
+          (cd package && ditto -c -k --sequesterRsrc "WLH VOCALS.vst3" "WLH VOCALS.component" ../WLH-VOCALS-macOS.zip)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WLH-VOCALS-macOS
+          path: WLH-VOCALS-macOS.zip
+          if-no-files-found: error
+          compression-level: 0
